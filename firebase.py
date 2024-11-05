@@ -37,9 +37,9 @@ def GetEvaluate():
         {
             'MaKhachHang': evaluete['MaNguoiDung'],
             'MaSanPham': evaluete['MaSanPham'],
-            'DiemDanhGia': evaluete['DiemDanhGia'] 
+            'DiemDanhGia': evaluete['DiemDanhGia']
         }
-        for evaluete in evaluate_data.values() 
+        for evaluete in evaluate_data.values()
     ]
 
     return evaluates
