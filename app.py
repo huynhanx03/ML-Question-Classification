@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS 
+from flask_cors import CORS
 import firebase
 import recommend
 
@@ -8,7 +8,11 @@ evaluates = firebase.GetEvaluate()
 RS = recommend.HybridRecommender(products, evaluates, k = 10)
 
 app = Flask(__name__)
-CORS(app)  
+CORS(app)
+
+@app.route('/')
+def hello():
+    return "Hello"
 
 @app.route('/recommend', methods=['POST'])
 def recommendHTTP():
@@ -22,10 +26,9 @@ def recommendHTTP():
 
         # Chuyển danh sách List<Product> khuyến nghị thành chuỗi JSON và gửi trả về cho ứng dụng C#
         return jsonify(productRecommend)
-    
     except Exception as e:
         return jsonify({"error": str(e)})
 
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    app.run()
 
