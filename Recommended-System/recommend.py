@@ -1,28 +1,28 @@
 import numpy as np
 from scipy.sparse import coo_matrix
 from implicit.als import AlternatingLeastSquares
-
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
-from model_bert import bert_embedding
+from sklearn.preprocessing import OneHotEncoder, normalize
 
 class CB(object):
     def __init__(self, Y_data, k=10):
         self.Y_data = Y_data
         self.k = k
+        self.weights = {"TenSanPham": 0.5, "LoaiSanPham": 0.3, "CongThuc": 0.2}
+        self.tfidf = TfidfVectorizer()
+        self.one_hot_encoder = OneHotEncoder(sparse_output=False)
 
     def embeddings_matrix(self):
-        # Sử dụng BERTEmbedding để tạo vector cho các sản phẩm
-        product_name_embeddings = np.vstack([bert_embedding.encode(product['TenSanPham']) for product in self.Y_data])
-        product_type_embeddings = np.vstack([bert_embedding.encode(product['LoaiSanPham']) for product in self.Y_data])
-        product_recipe_embeddings = np.vstack([bert_embedding.encode(product['CongThuc']) for product in self.Y_data])
+        name_features = self.tfidf.fit_transform([p["TenSanPham"] for p in self.Y_data]).toarray() * self.weights["TenSanPham"]
+        recipe_features = self.tfidf.fit_transform([p["CongThuc"] for p in self.Y_data]).toarray() * self.weights["CongThuc"]
+        type_features = self.one_hot_encoder.fit_transform([[p["LoaiSanPham"]] for p in self.Y_data]) * self.weights["LoaiSanPham"]
 
-        # Kết hợp các embedding với trọng số
-        self.combined_embeddings = 0.7 * product_name_embeddings + 0.2 * product_type_embeddings + 0.1 * product_recipe_embeddings
+        self.combined_features = normalize(np.hstack([name_features, type_features, recipe_features]))
 
     def calculate_similarity(self):
         # Tính toán ma trận cosine similarity giữa các sản phẩm
-        self.similarity_matrix = cosine_similarity(self.combined_embeddings)
+        self.similarity_matrix = cosine_similarity(self.combined_features)
 
     def refresh(self):
         self.embeddings_matrix()
@@ -185,3 +185,5 @@ class HybridRecommender:
                         num_more -= 1
 
         return recommendations
+
+

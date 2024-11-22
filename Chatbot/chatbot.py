@@ -5,7 +5,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from sklearn.utils import class_weight
 import numpy as np
-from model_bert import bert, tokenizer, BERTEmbeddingLayer
+from Helper.model_bert import bert, tokenizer, BERTEmbeddingLayer
 
 model = tf.keras.models.load_model('model_coffee_question_classification.keras', custom_objects={'BERTEmbeddingLayer': BERTEmbeddingLayer})
 
