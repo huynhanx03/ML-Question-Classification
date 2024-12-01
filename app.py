@@ -7,8 +7,6 @@ from flask_cors import CORS
 productsRC = Helper.firebase.GetProductRC()
 RS = Recommended_System.recommend.HybridRecommender(productsRC, k = 10)
 
-resultRC = RS.recommend()
-
 app = Flask(__name__)
 CORS(app)  
 
