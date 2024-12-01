@@ -2,7 +2,7 @@ import Helper.firebase
 import Recommended_System.recommend
 
 productsRC = Helper.firebase.GetProductRC()
-
+# print(productsRC)
 RS = Recommended_System.recommend.HybridRecommender(productsRC, k = 10)
 
 resultRC = RS.recommend("KH0001", "SP0039", False, True)
