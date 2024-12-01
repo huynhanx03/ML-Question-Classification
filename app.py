@@ -1,16 +1,31 @@
 import Helper.firebase
 import Recommended_System.recommend
 
+from flask import Flask, request, jsonify
+from flask_cors import CORS 
+
 productsRC = Helper.firebase.GetProductRC()
-# print(productsRC)
 RS = Recommended_System.recommend.HybridRecommender(productsRC, k = 10)
 
-resultRC = RS.recommend("KH0001", "SP0039", False, True)
+resultRC = RS.recommend()
 
-def display_products(products):
-    print(f"{'Mã Sản Phẩm':<15}{'Tên Sản Phẩm':<70}{'Loại Sản Phẩm':<15}")
-    print("="*200)
-    for product in products:
-        print(f"{product['MaSanPham']:<15}{product['TenSanPham']:<70}{product['LoaiSanPham']:<15}")
+app = Flask(__name__)
+CORS(app)  
 
-display_products(resultRC)
+@app.route('/recommend', methods=['POST'])
+def recommendHTTP():
+    try:
+        data = request.get_json()
+
+        product_id = data['MaSanPham']
+        user_id = data['MaKhachHang']
+
+        productRecommend = RS.recommend(user_id, product_id, True, True)
+
+        return jsonify(productRecommend)
+    
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+if __name__ == "__main__":
+    app.run(port=5000, debug=True)
