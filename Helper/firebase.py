@@ -9,14 +9,11 @@ firebase_admin.initialize_app(cred, {
 })
 
 def GetProduct():
-    # Lấy dữ liệu từ nút "SanPham" trong Firebase
     product_data = db.reference('SanPham').get()
 
-    # Lấy dữ liệu từ nút "LoaiSanPham" trong Firebase
     product_type_data = db.reference('LoaiSanPham').get()
     list_product_type = list(product_type_data.values())
 
-    # Xử lý dữ liệu
     products = [
         {
             'MaSanPham': product['MaSanPham'],
@@ -43,3 +40,22 @@ def GetEvaluate():
     ]
 
     return evaluates
+
+def GetProductRC():
+    product_data = db.reference('SanPham').get()
+
+    product_type_data = db.reference('LoaiSanPham').get()
+    list_product_type = list(product_type_data.values())
+
+    products = [
+        {
+            'MaSanPham': product['MaSanPham'],
+            'TenSanPham': product['TenSanPham'],
+            'SoLuong': product['SoLuong'],
+            'LoaiSanPham': next((x['LoaiSanPham'] for x in list_product_type if x['MaLoaiSanPham'] == product['MaLoaiSanPham']), None),
+            'CongThuc': ' | '.join([congthuc['TenNguyenLieu'] for congthuc in product['CongThuc'].values()])
+        }
+        for product in product_data.values()
+    ]
+
+    return products
