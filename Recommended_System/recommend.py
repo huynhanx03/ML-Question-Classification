@@ -4,6 +4,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import OneHotEncoder, normalize
 from sklearn.metrics.pairwise import cosine_similarity
 from tensorflow.keras.models import load_model
+import Helper.firebase
 
 class CB(object):
     def __init__(self, Y_data, k=10, bias_factor=0.5):
@@ -154,3 +155,6 @@ class HybridRecommender:
                         num_more -= 1
 
         return recommendations
+    
+productsRC = Helper.firebase.GetProductRC()
+RS = HybridRecommender(productsRC, k = 10)

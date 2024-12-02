@@ -1,18 +1,15 @@
-# import Helper.firebase
 # import Recommended_System.recommend
+import Chatbot.chatbot
 
-# productsRC = Helper.firebase.GetProductRC()
-# RS = Recommended_System.recommend.HybridRecommender(productsRC, k = 10)
+# from flask import Flask, request, jsonify
+# from flask_cors import CORS 
 
-from flask import Flask, request, jsonify
-from flask_cors import CORS 
+# app = Flask(__name__)
+# CORS(app)  
 
-app = Flask(__name__)
-CORS(app)  
-
-@app.route('/')
-def hello_world():
-	return 'Hello World!'
+# @app.route('/')
+# def hello_world():
+# 	return 'Hello World!'
 
 # @app.route('/recommend', methods=['POST'])
 # def recommendHTTP():
@@ -29,5 +26,7 @@ def hello_world():
 #     except Exception as e:
 #         return jsonify({"error": str(e)})
 
-if __name__ == "__main__":
-    app.run()
+print(Chatbot.chatbot.chatBotGetMessage("tôi nên dùng cà phê nào", "KH0001"))
+
+# if __name__ == "__main__":
+#     app.run()

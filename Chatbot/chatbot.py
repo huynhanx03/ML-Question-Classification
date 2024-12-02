@@ -1,12 +1,51 @@
 import tensorflow as tf
 from transformers import AutoTokenizer, TFAutoModel
 from tensorflow.keras.layers import Input, Lambda, Dense, Concatenate, Conv1D, GlobalAveragePooling1D, Dropout, BatchNormalization, Bidirectional, LSTM, Layer
-from tensorflow.keras.models import Model
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.models import Model, load_model
 from sklearn.utils import class_weight
 import numpy as np
-from Helper.model_bert import bert, tokenizer, BERTEmbeddingLayer
 
+import DSA
+import DSA.BinarySearch
+import DSA.KMP
+import Helper.helper
+import Recommended_System.recommend
+
+# Configuration and Model Parameters
+bert_name = "vinai/phobert-base"
+
+# Load pre-trained BERT model and tokenizer
+bert = TFAutoModel.from_pretrained(bert_name)
+tokenizer = AutoTokenizer.from_pretrained(bert_name)
+
+MAX_LEN_CONTEXT = 25
+
+class BERTEmbeddingLayer(Layer):
+    def __init__(self, bert_model_name, max_length, **kwargs):
+        super(BERTEmbeddingLayer, self).__init__(**kwargs)
+        self.bert_model_name = bert_model_name
+        self.max_length = max_length
+        # Load the BERT model inside the layer
+        self.bert = TFAutoModel.from_pretrained(bert_model_name)
+
+    def call(self, inputs):
+        input_ids, attention_mask = inputs
+        # Obtain BERT outputs
+        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+        return outputs.last_hidden_state  # Equivalent to outputs[0]
+
+    def get_config(self):
+        config = super(BERTEmbeddingLayer, self).get_config()
+        config.update({
+            'bert_model_name': self.bert_model_name,
+            'max_length': self.max_length,
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+    
 model = tf.keras.models.load_model('model_coffee_question_classification.keras', custom_objects={'BERTEmbeddingLayer': BERTEmbeddingLayer})
 
 MAX_LEN_CONTEXT = 25
@@ -36,13 +75,67 @@ def getNumberPredict(question):
 
   return predicted_classes[0]
 
-  # If you have a dictionary mapping from class indices to class labels, apply it
-  # Example:
-  label_mapping = {0: 'infomation', 1: 'productTopSell', 2: 'recommendedProduct', 3: 'ingredient', 4: 'quality', 5: 'greeting'}
-  predicted_labels = [label_mapping.get(pred, 'unknown') for pred in predicted_classes]
+beginMessage = "Chào bạn, ESPRO xin trả lời câu hỏi của bạn lưu ý đây là tin nhắn tự động của trí tuệ nhân tạo."
+endMessage = (
+    "Mong bạn hài lòng với câu trả lời của chúng tôi.\n"
+    "Hiện tại, chúng tôi chỉ trả lời các câu hỏi liên quan đến thông tin sản phẩm, "
+    "sản phẩm bán chạy và gợi ý sản phẩm.\nVí dụ:\n"
+    "- Cà phê sữa còn hàng không?\n"
+    "- Cho tôi danh sách sản phẩm bán chạy của quán.\n"
+    "- Gợi ý cho tôi sản phẩm với.\n"
+    "Chân thành cảm ơn bạn đã sử dụng dịch vụ của quán."
+)
+def getMessage(number, question, customer_id):
+    message = [beginMessage]
 
-  # Print the predicted labels
-  for context, label in zip(test_contexts, predicted_labels):
-      print(f"Question: {context} --> Predicted Label: {label}")
+    # Find products in the question
+    productInQuestion = DSA.KMP.find_products_in_question_kmp_precomputed(question)
+    sizeProductInQuestion = len(productInQuestion)
 
-print(getNumberPredict("cà phê nào ngon"))
+    ingredientInQuestion = DSA.KMP.find_ingredients_in_question_kmp_precomputed(question)
+
+    if number == 0:
+        # Information
+        message.append("\n")
+        message.extend(Helper.helper.getInfomationProduct(product) for product in productInQuestion)
+
+    elif number == 1:
+        # Top sell
+        productIDs = Helper.helper.GetTopProductID()
+        productTopSell = [DSA.BinarySearch.binary_search(productID) for productID in productIDs]
+
+        message.append('Sản phẩm được bán chạy nhiều nhất của cửa hàng:\n')
+        message.extend(f'- {product["TenSanPham"]}\n' for product in productTopSell)
+
+    elif number == 2:
+        # Recommendation
+        product_id = productInQuestion[0]['MaSanPham'] if sizeProductInQuestion != 0 else "SP0001"
+        user_id = "" if sizeProductInQuestion != 0 else customer_id
+
+        productsRecommend = Recommended_System.recommend.RS.recommend(user_id, product_id, True, True)
+
+        message.append('Sản phẩm gợi ý cho bạn:')
+        message.extend(f'- {product["TenSanPham"]}' for product in productsRecommend)
+
+    elif number == 3:
+        productFromIngredients = Helper.helper.getProductFromIngredients(ingredientInQuestion)
+        message.append('Các sản phẩm có thành phần bạn quan tâm:\n')
+        message.extend(f'- {Helper.helper.getInfomationProduct(product)}' for product in productFromIngredients)
+
+    elif number == 4:
+        # Quality information
+        if productInQuestion:
+          message.append(f'Thông tin về chất lượng của sản phẩm: {Helper.helper.get_quality_info(productInQuestion)}\n')
+        else:
+          message.append('Sản phẩm của cửa hàng đều ngon.\n')
+
+    elif number == 5:
+        # Greeting
+        message = ['Chào bạn! Cảm ơn bạn đã quan tâm đến cửa hàng của chúng tôi. Nếu bạn cần thông tin cụ thể về sản phẩm hoặc dịch vụ, vui lòng hỏi nhé!']
+
+    # Combine the messages into a single string
+    return '\n'.join(message) + '\n' + endMessage
+
+def chatBotGetMessage(question, customer_id):
+    number = getNumberPredict(question)
+    return getMessage(number, question, customer_id)
