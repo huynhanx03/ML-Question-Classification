@@ -1,3 +1,12 @@
+import tensorflow as tf
+from tensorflow.keras import mixed_precision
+tf.config.intra_op_parallelism_threads = 4  # Giới hạn số lượng thread CPU sử dụng
+tf.config.inter_op_parallelism_threads = 2  # Điều chỉnh số lượng thread giữa các phép toán
+tf.config.optimizer.set_jit(True)  # Bật JIT (XLA)
+
+policy = mixed_precision.Policy('mixed_float16')
+mixed_precision.set_global_policy(policy)
+
 # import Recommended_System.recommend
 import Chatbot.chatbot
 
